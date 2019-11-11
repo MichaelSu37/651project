@@ -8,6 +8,7 @@ unwanted = re.compile('[^a-z0-9-_().!?\']')
 #symbols = re.compile('[-()_.!?<>|+]')
 symbols = re.compile('[^a-z0-9]')
 
+# splits each file into 100-words segments
 def segFile(fid, fnumber, info, outp, words, c, styleChanged):
     if (styleChanged):
         positions = info["positions"]
@@ -185,7 +186,7 @@ def getSample(option):
 
 
 if __name__ == '__main__':
-    #genModel()
+    genModel()
     options = ['train', 'test', 'validate']
     getSample(options[0])
 
