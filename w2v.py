@@ -140,6 +140,7 @@ def genModel():
     v = model.wv['computer']
     print len(v)
 
+# each X[i] is a 100 * 100 matrix representing one file
 def getSample(option):
     '''
     option: one of the values in ['train', 'test', 'validate']
