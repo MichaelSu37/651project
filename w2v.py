@@ -5,7 +5,8 @@ import numpy as np
 
 wnl = nltk.WordNetLemmatizer()
 unwanted = re.compile('[^a-z0-9-_().!?\']')
-symbols = re.compile('[.!?<>|+]')
+#symbols = re.compile('[-()_.!?<>|+]')
+symbols = re.compile('[^a-z0-9]')
 
 def segFile(fid, fnumber, info, outp, words, c, styleChanged):
     if (styleChanged):
@@ -139,9 +140,17 @@ def genModel():
     v = model.wv['computer']
     print len(v)
 
-def processData(option):
+def getSample(option):
+    '''
+    option: one of the values in ['train', 'test', 'validate']
+
+    return value:
+        X:  dimension: numfiles * 100 (words) * 100 (w2v dimension)
+
+        y:  dimension: (numfiles * 1)
+    '''
     model = Word2Vec.load("word2vec.model")
-    paths = {'test':'testing/', 'train':'training/', 'validate':'validation/'}
+    paths = {'test':'test/', 'train':'train/', 'validate':'validate/'}
     path = paths[option]
     files = sorted(os.listdir(path))
     truthfile = []
@@ -152,12 +161,30 @@ def processData(option):
             truthfile.append(path + f)
         else:
             textfile.append(path + f)
+    
+    truthfile.sort()
+    textfile.sort()
 
+    y = np.zeros(len(textfile))
+    X = np.zeros((len(textfile), 100, 100))
 
+    for i in range(len(textfile)):
+        textf = open(textfile[i], 'r')
+        truthf = open(truthfile[i], 'r')
+        words = textf.readline().strip().split()
+        label = float(truthf.readline().strip())
+        for j, word in enumerate(words):
+            try:
+                X[i][j] = model.wv[word]
+            except:
+                pass
+        y[i] = label
+
+    return X, y
 
 
 if __name__ == '__main__':
     #genModel()
     options = ['train', 'test', 'validate']
-    processData(options[0])
+    getSample(options[0])
 
