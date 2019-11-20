@@ -92,7 +92,7 @@ class CNN_Class(Classifier):
     """
 
     def __init__(self, parameters={}):
-        self.params = {'regwgt': 0.01, "epochs": 5, "bSize":30}
+        self.params = {'regwgt': 0.01, "epochs": 5, "bSize":30, "stepsize":0.001}
         self.reset(parameters)
         # self.net = CNN()
         # self.criterion = nn.CrossEntropyLoss()
@@ -102,7 +102,7 @@ class CNN_Class(Classifier):
         self.resetparams(parameters)
         self.net = CNN()
         self.criterion = nn.BCELoss()
-        self.optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
+        self.optimizer = optim.SGD(self.net.parameters(), lr=self.params["stepsize"], momentum=0.9)
         self.accuracy = 0.0
 
     def learn(self, Xtrain, ytrain, Xval, yval):

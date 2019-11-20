@@ -53,7 +53,7 @@ def classify():
 
     parameters = (
         #{'regularizer': 'None', 'stepsize':0.1, 'num_steps':300, 'batch_size':20},
-        {'regularizer': 'None', 'stepsize':0.1, 'num_steps':300, 'batch_size':20, 'hidden': 200},
+        {'regularizer': 'None', 'stepsize':0.001, 'epochs':300, 'bSize':20, 'hidden': 200},
     )
     numparams = len(parameters)
 
