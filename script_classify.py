@@ -36,7 +36,7 @@ def get_k_fold_data(k, K, trainX, trainY):
 
 def classify():
     # init variables
-    run = False
+    run = True
     plot = False
     numruns = 1
     k_fold = True
@@ -61,14 +61,30 @@ def classify():
 
     # load dataset & shuffle 
     # trainX, testX = pickle. load(open(dataset_file, "rb"))
-    if (os.path.exists('allData.pkl')):
-        trainX, trainY, valX, valY, testX, testY = pickle.load(open('allData.pkl', 'rb'))
+
+    
+    if (os.path.exists('train.pkl') and os.path.exists('test.pkl') and os.path.exists('val.pkl')):
+        with open('train.pkl') as f:
+            trainX, trainY = pickle.load(f)
+        with open('test.pkl') as f:
+            testX, testY = pickle.load(f)
+        with open('val.pkl') as f:
+            valX, valY = pickle.load(f)
+
     else:
         trainX, trainY = getSample('train')
+        with  open('train.pkl', 'wb') as f:
+            pickle.dump((trainX, trainY), f)
+
         testX, testY = getSample('test')
+        with  open('test.pkl', 'wb') as f:
+            pickle.dump((testX, testY), f)
+
         valX, valY = getSample('validate')
-        pickle.dump((trainX, trainY, valX, valY, testX, testY), open('allData.pkl', 'wb'))
+        with  open('val.pkl', 'wb') as f:
+            pickle.dump((valX, valY), f)
     
+
     np.random.seed(1)
     np.random.shuffle(trainX)
     np.random.seed(1)
