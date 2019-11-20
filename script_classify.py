@@ -2,7 +2,7 @@ from __future__ import division  # floating point division
 import csv
 import random
 import math
-import pickle
+import pickle, os
 
 import numpy as np
 #import utilities as utils
@@ -47,7 +47,7 @@ def classify():
 
     classalgs = {
         #'Logistic Regression': algs.LogitReg(),
-        'Neuron Network': algs.CNN_Class,
+        'Neuron Network': algs.CNN_Class(),
     }
     numalgs = len(classalgs)
 
@@ -63,13 +63,30 @@ def classify():
 
     # load dataset & shuffle 
     # trainX, testX = pickle. load(open(dataset_file, "rb"))
-    trainX, trainY = getSample('train')
-    testX, testY = getSample('test')
-    valX, valY = getSample('validate')
+
     
-    pickle.dump((trainX, trainY, valX, valY, testX, testY), open("tx_ty_vx_vy_tx_ty.pkl","wb"))
-    print ("save finish")
+    if (os.path.exists('train.pkl') and os.path.exists('test.pkl') and os.path.exists('val.pkl')):
+        with open('train.pkl', 'rb') as f:
+            trainX, trainY = pickle.load(f)
+        with open('test.pkl', 'rb') as f:
+            testX, testY = pickle.load(f)
+        with open('val.pkl', 'rb') as f:
+            valX, valY = pickle.load(f)
+
+    else:
+        trainX, trainY = getSample('train')
+        with  open('train.pkl', 'wb') as f:
+            pickle.dump((trainX, trainY), f)
+
+        testX, testY = getSample('test')
+        with  open('test.pkl', 'wb') as f:
+            pickle.dump((testX, testY), f)
+
+        valX, valY = getSample('validate')
+        with  open('val.pkl', 'wb') as f:
+            pickle.dump((valX, valY), f)
     
+
     np.random.seed(1)
     np.random.shuffle(trainX)
     np.random.seed(1)
