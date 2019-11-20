@@ -105,29 +105,45 @@ class CNN_Class(Classifier):
         self.optimizer = optim.SGD(self.net.parameters(), lr=self.params["stepsize"], momentum=0.9)
         self.accuracy = 0.0
 
+
+    def createDataset(self, X,Y):
+        x_tensor = torch.from_numpy(X)
+        x_tensor = x_tensor.view(-1, 1, 100, 100)
+        y_tensor = torch.from_numpy(Y).view(-1)
+        return torch.utils.data.TensorDataset(x_tensor,y_tensor)
+
+
     def learn(self, Xtrain, ytrain, Xval, yval):
         """ Learns using the traindata """
-        trainSet = OurDataset(Xtrain, ytrain)
+        trainSet = self.createDataset(Xtrain, ytrain)
         trainLoader = torch.utils.data.DataLoader(trainSet, batch_size=self.params["bSize"], shuffle=True, num_workers=2)
-        valSet = OurDataset(Xval, yval)
+        valSet = self.createDataset(Xval, yval)
         valLoader = torch.utils.data.DataLoader(valSet, batch_size=self.params["bSize"], shuffle=True, num_workers=2)
 
+        print("start learning")
         for epoch in range(self.params["epochs"]):
             running_loss = 0.0
             for i, data in enumerate(trainLoader):
                 # get data
                 inputs, labels = data
+                print(inputs.shape,flush=True)
+                print(labels.shape,flush=True)
 
                 # zero the parameter gradients
                 self.optimizer.zero_grad()
 
                 # train
                 outputs = self.net(inputs)
+                print(1,flush=True)
                 loss = self.criterion(outputs, labels)
+                print(2,flush=True)
                 loss.backward()
+                print(3,flush=True)
                 self.optimizer.step()
+                print(4,flush=True)
 
                 running_loss += loss.item()
+                print(".", end="",flush=True)
                 if i%100 == 99:
                     print("[%d %5d] loss: %.3f" % (epoch + 1, i + 1, running_loss / 100))
                     running_loss = 0.0
