@@ -7,7 +7,7 @@ import pickle
 import numpy as np
 #import utilities as utils
 #import dataloader as dtl
-#import classalgorithms as algs
+import classalgorithm as algs
 import matplotlib.pyplot as plt
 from w2v import getSample
 
@@ -45,7 +45,7 @@ def classify():
 
     classalgs = {
         #'Logistic Regression': algs.LogitReg(),
-        'Neuron Network': 1,
+        'Neuron Network': algs.CNN_Class,
     }
     numalgs = len(classalgs)
 

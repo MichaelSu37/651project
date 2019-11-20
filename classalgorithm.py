@@ -107,7 +107,7 @@ class CNN_Class(Classifier):
 
     def learn(self, Xtrain, ytrain, Xval, yval):
         """ Learns using the traindata """
-        trainSet = OurDataset(Xtran, ytrain)
+        trainSet = OurDataset(Xtrain, ytrain)
         trainLoader = torch.utils.data.DataLoader(trainSet, batch_size=self.params["bSize"], shuffle=True, num_workers=2)
         valSet = OurDataset(Xval, yval)
         valLoader = torch.utils.data.DataLoader(valSet, batch_size=self.params["bSize"], shuffle=True, num_workers=2)
@@ -150,8 +150,8 @@ class CNN_Class(Classifier):
     #     ytest[ytest < 0] = 0
     #     return ytest
 
-    def get_accuracy():
+    def get_accuracy(self):
         return self.accuracy
 
-    def get_weights():
+    def get_weights(self):
         return self.net.state_dict()
