@@ -2,7 +2,7 @@ from __future__ import division  # floating point division
 import csv
 import random
 import math
-import pickle
+import pickle, os
 
 import numpy as np
 #import utilities as utils
@@ -36,7 +36,7 @@ def get_k_fold_data(k, K, trainX, trainY):
 
 def classify():
     # init variables
-    run = True
+    run = False
     plot = False
     numruns = 1
     k_fold = True
@@ -45,7 +45,7 @@ def classify():
 
     classalgs = {
         #'Logistic Regression': algs.LogitReg(),
-        'Neuron Network': algs.CNN_Class,
+        'Neuron Network': algs.CNN_Class(),
     }
     numalgs = len(classalgs)
 
@@ -61,9 +61,13 @@ def classify():
 
     # load dataset & shuffle 
     # trainX, testX = pickle. load(open(dataset_file, "rb"))
-    trainX, trainY = getSample('train')
-    testX, testY = getSample('test')
-    valX, valY = getSample('validate')
+    if (os.path.exists('allData.pkl')):
+        trainX, trainY, valX, valY, testX, testY = pickle.load(open('allData.pkl', 'rb'))
+    else:
+        trainX, trainY = getSample('train')
+        testX, testY = getSample('test')
+        valX, valY = getSample('validate')
+        pickle.dump((trainX, trainY, valX, valY, testX, testY), open('allData.pkl', 'wb'))
     
     np.random.seed(1)
     np.random.shuffle(trainX)
