@@ -64,11 +64,11 @@ def classify():
 
     
     if (os.path.exists('train.pkl') and os.path.exists('test.pkl') and os.path.exists('val.pkl')):
-        with open('train.pkl') as f:
+        with open('train.pkl', 'rb') as f:
             trainX, trainY = pickle.load(f)
-        with open('test.pkl') as f:
+        with open('test.pkl', 'rb') as f:
             testX, testY = pickle.load(f)
-        with open('val.pkl') as f:
+        with open('val.pkl', 'rb') as f:
             valX, valY = pickle.load(f)
 
     else:
