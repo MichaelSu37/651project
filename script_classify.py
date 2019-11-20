@@ -7,7 +7,7 @@ import pickle
 import numpy as np
 #import utilities as utils
 #import dataloader as dtl
-import classalgorithm as algs
+#import classalgorithm as algs
 import matplotlib.pyplot as plt
 from w2v import getSample
 
@@ -42,6 +42,8 @@ def classify():
     k_fold = True
     K = 3
     dataset_file = "dataset_tr_te.pkl"
+    
+    print("hello")
 
     classalgs = {
         #'Logistic Regression': algs.LogitReg(),
@@ -64,6 +66,9 @@ def classify():
     trainX, trainY = getSample('train')
     testX, testY = getSample('test')
     valX, valY = getSample('validate')
+    
+    pickle.dump((trainX, trainY, valX, valY, testX, testY), open("tx_ty_vx_vy_tx_ty.pkl","wb"))
+    print ("save finish")
     
     np.random.seed(1)
     np.random.shuffle(trainX)
