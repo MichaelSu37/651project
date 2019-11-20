@@ -139,7 +139,7 @@ def genModel():
 
     model = Word2Vec.load("word2vec.model")
     v = model.wv['computer']
-    print len(v)
+    print(len(v))
 
 # each X[i] is a 100 * 100 matrix representing one file
 def getSample(option):
