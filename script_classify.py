@@ -45,7 +45,7 @@ def classify():
 
     classalgs = {
         #'Logistic Regression': algs.LogitReg(),
-        'Neuron Network': algs.CNN_Class,
+        'Neuron Network': algs.CNN_Class(),
     }
     numalgs = len(classalgs)
 
