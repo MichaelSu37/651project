@@ -7,7 +7,7 @@ import pickle, os
 import numpy as np
 #import utilities as utils
 #import dataloader as dtl
-#import classalgorithm as algs
+import classalgorithm as algs
 import matplotlib.pyplot as plt
 from w2v import getSample
 
@@ -47,7 +47,7 @@ def classify():
 
     classalgs = {
         #'Logistic Regression': algs.LogitReg(),
-        'Neuron Network': algs.CNN_Class(),
+        'CNN': algs.CNN_Class(),
     }
     numalgs = len(classalgs)
 
@@ -57,14 +57,11 @@ def classify():
     )
     numparams = len(parameters)
 
-    accuracy = {}
-    #for learnername in classalgs:
-    #    accuracy[learnername] = np.zeros((numparams, numruns, K))
+    #accuracy = {}
+    for learnername in classalgs:
+        accuracy[learnername] = np.zeros((numparams, numruns, K))
 
     # load dataset & shuffle 
-    # trainX, testX = pickle. load(open(dataset_file, "rb"))
-
-    
     if (os.path.exists('train.pkl') and os.path.exists('test.pkl') and os.path.exists('val.pkl')):
         with open('train.pkl', 'rb') as f:
             trainX, trainY = pickle.load(f)
@@ -93,6 +90,7 @@ def classify():
     np.random.shuffle(trainY)
 
     weights = []
+    best_accuracy = []
     
     # Run learning algorithm
     if run:
@@ -128,6 +126,7 @@ def classify():
                     best_accuracy_over_K = np.argmax(accuracy[learnername][p, r])
                     best_weights_over_K = weights_k[best_accuracy_over_K]
                     weights.append((best_weights_over_K, accuracy[learnername][p, r, best_accuracy_over_K]))
+                    best_accuracy.append(best_accuracy_over_K)
                     print("best_accuracy_over_K: ", best_accuracy_over_K)
                     
                     # Test model
@@ -135,20 +134,29 @@ def classify():
                     # acc = utils.getaccuracy(testY, predictions)
                     # print ('accuracy for ' + learnername + ': ' + str(acc))
                     # accuracy[learnername][p,r] = acc
-    # Save best weights
+
+    # Save best weights & accuracy
     pickle.dump(weights, open("weights.pkl", "wb"))
+    pickle.dump(accuracy, open("accuracy.pkl","wb"))
 
     # plot
     if plot == True:
-        print("PLOT!")
-        num_epochs = 300
-        accuracy_val, accuracy_test, accuracy_train, best_accuracy, best_weight = pickle. load(  open("learning_acc.pkl", "rb")) 
-        print("best_accuracy :", best_accuracy)
-        epi = np.arange(0, num_epochs, 1)
-        plt.plot(epi,accuracy_val, label='validation accuracy')
+        print("PLOT CNN Result!")
+        #num_epochs = 300
+        accuracy = pickle. load(  open("accurack.pkl", "rb")) 
+        epi = np.arange(0, K, 1)
+        for p in range (numparams):
+            temp_acc = np.zeros(K)
+            for r in range (numruns):
+                print("accuracy :", accuracy['CNN'][p,r])
+                temp_acc += accuracy['CNN'][p,r]
+            plt.plot(epi, temp_acc, label = 'validation accuracy p='+str(p))
+                
+        #epi = np.arange(0, num_epochs, 1)
+        #plt.plot(epi,accuracy_val, label='validation accuracy')
         #plt.plot(epi,accuracy_test, label='test accuracy')
-        plt.plot(epi,accuracy_train, label='train accuracy')
-        plt.xlabel('epochs')
+        #plt.plot(epi,accuracy_train, label='train accuracy')
+        plt.xlabel('K')
         plt.ylabel('Accuracy %') 
         plt.legend()    
 
