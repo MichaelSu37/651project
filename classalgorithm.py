@@ -107,9 +107,9 @@ class CNN_Class(Classifier):
 
 
     def createDataset(self, X,Y):
-        x_tensor = torch.from_numpy(X)
+        x_tensor = torch.from_numpy(X).float()
         x_tensor = x_tensor.view(-1, 1, 100, 100)
-        y_tensor = torch.from_numpy(Y).view(-1)
+        y_tensor = torch.from_numpy(Y).view(-1).float()
         return torch.utils.data.TensorDataset(x_tensor,y_tensor)
 
 
@@ -123,24 +123,25 @@ class CNN_Class(Classifier):
         print("start learning")
         for epoch in range(self.params["epochs"]):
             running_loss = 0.0
+            # print("???", flush=True)
             for i, data in enumerate(trainLoader):
                 # get data
                 inputs, labels = data
-                print(inputs.shape,flush=True)
-                print(labels.shape,flush=True)
+                # print(inputs.shape,flush=True)
+                # print(labels.shape,flush=True)
 
                 # zero the parameter gradients
                 self.optimizer.zero_grad()
 
                 # train
                 outputs = self.net(inputs)
-                print(1,flush=True)
+                # print(1,flush=True)
                 loss = self.criterion(outputs, labels)
-                print(2,flush=True)
+                # print(2,flush=True)
                 loss.backward()
-                print(3,flush=True)
+                # print(3,flush=True)
                 self.optimizer.step()
-                print(4,flush=True)
+                # print(4,flush=True)
 
                 running_loss += loss.item()
                 print(".", end="",flush=True)
