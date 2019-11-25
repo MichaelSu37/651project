@@ -7,6 +7,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
+
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
 class Classifier:
     """
     Generic classifier interface; returns random classification
@@ -40,21 +43,6 @@ class Classifier:
         probs = np.random.rand(Xtest.shape[0])
         ytest = utils.threshold_probs(probs)
         return ytest
-
-class OurDataset(torch.utils.data.Dataset):
-    def __init__(self, X, Y):
-        """
-        X: shape of Nx100x100 np array
-        Y: shape of Nx100 np array
-        """
-        self.X = torch.from_numpy(X)
-        self.Y = torch.from_numpy(Y)
-
-    def __len__(self):
-        return self.shape[0]
-
-    def __getitem__(self, idx):
-        return self.X[idx].view(1,100,100), self.Y[idx].view(1)
 
 
 class CNN(nn.Module):
@@ -94,81 +82,93 @@ class CNN_Class(Classifier):
     def __init__(self, parameters={}):
         self.params = {'regwgt': 0.01, "epochs": 5, "bSize":30, "stepsize":0.001}
         self.reset(parameters)
-        # self.net = CNN()
-        # self.criterion = nn.CrossEntropyLoss()
-        # self.optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
 
     def reset(self, parameters):
         self.resetparams(parameters)
-        self.net = CNN()
+        self.net = CNN().to(device)
         self.criterion = nn.BCELoss()
-        self.optimizer = optim.SGD(self.net.parameters(), lr=self.params["stepsize"], momentum=0.9)
-        self.accuracy = 0.0
-
+        self.optimizer = optim.SGD(self.net.parameters(), lr=self.params["stepsize"], momentum=0.8)
+        self.loss = []
 
     def createDataset(self, X,Y):
-        x_tensor = torch.from_numpy(X).float()
+        x_tensor = torch.from_numpy(X).float().to(device)
         x_tensor = x_tensor.view(-1, 1, 100, 100)
-        y_tensor = torch.from_numpy(Y).view(-1).float()
+        y_tensor = torch.from_numpy(Y).view(-1,1).float().to(device)
         return torch.utils.data.TensorDataset(x_tensor,y_tensor)
 
 
     def learn(self, Xtrain, ytrain, Xval, yval):
         """ Learns using the traindata """
         trainSet = self.createDataset(Xtrain, ytrain)
-        trainLoader = torch.utils.data.DataLoader(trainSet, batch_size=self.params["bSize"], shuffle=True, num_workers=2)
+        trainLoader = torch.utils.data.DataLoader(trainSet, batch_size=self.params["bSize"], shuffle=True, num_workers=0)
         valSet = self.createDataset(Xval, yval)
-        valLoader = torch.utils.data.DataLoader(valSet, batch_size=self.params["bSize"], shuffle=True, num_workers=2)
+        valLoader = torch.utils.data.DataLoader(valSet, batch_size=self.params["bSize"], shuffle=True, num_workers=0)
 
         print("start learning")
         for epoch in range(self.params["epochs"]):
             running_loss = 0.0
-            # print("???", flush=True)
             for i, data in enumerate(trainLoader):
                 # get data
                 inputs, labels = data
-                # print(inputs.shape,flush=True)
-                # print(labels.shape,flush=True)
 
                 # zero the parameter gradients
                 self.optimizer.zero_grad()
 
                 # train
                 outputs = self.net(inputs)
-                # print(1,flush=True)
                 loss = self.criterion(outputs, labels)
-                # print(2,flush=True)
                 loss.backward()
-                # print(3,flush=True)
                 self.optimizer.step()
-                # print(4,flush=True)
 
                 running_loss += loss.item()
                 print(".", end="",flush=True)
-                if i%100 == 99:
-                    print("[%d %5d] loss: %.3f" % (epoch + 1, i + 1, running_loss / 100))
+                if i%80 == 79:
+                    print("[%d %5d] loss: %.3f" % (epoch + 1, i + 1, running_loss / 80))
+                    self.loss.append(running_loss / 80)
                     running_loss = 0.0
-
         print("done training.")
-        print("start validating")
-        wrong = 0
-        for data in valLoader:
-            inputs, labels = data
-            outputs = self.net(inputs)
-            outputs[outputs>0.5] = 1
-            outputs[outputs<=0.5] = 0
-            wrong +=torch.sum( abs(labels-outputs))
         
-        self.accuracy = 1 - wrong / len(valSet)
+        print("start validating")
+        acc = self.cal_accuracy(valLoader, len(valSet))
+        print("validation accuracy:",acc)
 
-    # def predict(self, Xtest):
-    #     ytest = np.dot(Xtest, self.weights)
-    #     ytest[ytest > 0] = 1
-    #     ytest[ytest < 0] = 0
-    #     return ytest
+    def cal_accuracy(self, valLoader, length):
+        """ Calculate the accuracy of a given validation data loader """
+        with torch.no_grad():
+            wrong = 0
+            for data in valLoader:
+                inputs, labels = data
+                outputs = self.net(inputs)
+                outputs[outputs>0.5] = 1
+                outputs[outputs<=0.5] = 0
+                wrong +=torch.sum( abs(labels-outputs))  
+                acc = 1 - wrong / length
+        return acc
+
+    def predict(self, Xtest):
+        """ Predict the labels for a given test data """
+        Ytest = np.zeros(len(Xtest))
+        testSet = self.createDataset(Xtest, Ytest)
+        testLoader = torch.utils.data.DataLoader(testSet, batch_size=self.params["bSize"], shuffle=False, num_workers=0)
+        with torch.no_grad():
+            for data in valLoader:
+                inputs, labels = data
+                outputs = self.net(inputs)
+                outputs[outputs>0.5] = 1
+                outputs[outputs<=0.5] = 0
+        return outputs
+
+    def test(self, Xtest, Ytest):
+        """ Test on a given test data and report accuracy """
+        print("start testing")
+        testSet = self.createDataset(Xtest, Ytest)
+        testLoader = torch.utils.data.DataLoader(testSet, batch_size=self.params["bSize"], shuffle=False, num_workers=0)
+        acc = self.cal_accuracy(testLoader, len(testSet))
+        print("testing accuracy is:", acc)
+        return acc
 
     def get_accuracy(self):
-        return self.accuracy
+        return self.loss
 
     def get_weights(self):
         return self.net.state_dict()
