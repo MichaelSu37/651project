@@ -53,16 +53,26 @@ def classify():
 
     parameters = (
         #{'regularizer': 'None', 'stepsize':0.1, 'num_steps':300, 'batch_size':20},
-        {'regularizer': 'None', 'stepsize':0.001, 'epochs':300, 'bSize':20, 'hidden': 200},
+        {'regularizer': 'None', 'stepsize':0.001, 'epochs':200, 'bSize':20, 'hidden': 200},
     )
     numparams = len(parameters)
 
-    #accuracy = {}
+    accuracy = {}
     for learnername in classalgs:
         accuracy[learnername] = np.zeros((numparams, numruns, K))
 
     # load dataset & shuffle 
-    if (os.path.exists('train.pkl') and os.path.exists('test.pkl') and os.path.exists('val.pkl')):
+    trainDatafile = '/content/drive/My Drive/651Project/dataAfterSplit/train.pkl'
+    testDatafile = '/content/drive/My Drive/651Project/dataAfterSplit/test.pkl'
+    valDatafile = '/content/drive/My Drive/651Project/dataAfterSplit/val.pkl'
+    if (os.path.exists(trainDatafile) and os.path.exists(testDatafile) and os.path.exists(valDatafile)):
+        with open(trainDatafile, 'rb') as f:
+            trainX, trainY = pickle.load(f)
+        with open(testDatafile, 'rb') as f:
+            testX, testY = pickle.load(f)
+        with open(valDatafile, 'rb') as f:
+            valX, valY = pickle.load(f)    
+    elif (os.path.exists('train.pkl') and os.path.exists('test.pkl') and os.path.exists('val.pkl')):
         with open('train.pkl', 'rb') as f:
             trainX, trainY = pickle.load(f)
         with open('test.pkl', 'rb') as f:
@@ -110,9 +120,9 @@ def classify():
                     # run K-fold algorithm
                     for counter_k in range(K):
                         k_trainX, k_trainY, k_valX, k_valY = get_k_fold_data(counter_k, K, trainX, trainY)
-                        print(k_trainX[0],k_trainY[0])
-                        print(k_trainX[10],k_trainY[10])
-                        print(k_trainX[20],k_trainY[20])
+                        #print(k_trainX[0],k_trainY[0])
+                        #print(k_trainX[10],k_trainY[10])
+                        #print(k_trainX[20],k_trainY[20])
                         # Reset learner for new parameters
                         learner.reset(params)
                         print ('Running learner = ' + learnername + ' on parameters ' + str(learner.getparams()))
