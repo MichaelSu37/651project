@@ -5,8 +5,6 @@ import math
 import pickle, os
 
 import numpy as np
-#import utilities as utils
-#import dataloader as dtl
 import classalgorithm as algs
 import matplotlib.pyplot as plt
 from w2v import getSample
@@ -38,12 +36,11 @@ def classify():
     # init variables
     run = True
     plot = False
+    plot_len = 0
     numruns = 1
     k_fold = True
     K = 3
     dataset_file = "dataset_tr_te.pkl"
-    
-    print("hello")
 
     classalgs = {
         #'Logistic Regression': algs.LogitReg(),
@@ -106,7 +103,7 @@ def classify():
     if run:
         for r in range(numruns):
             print(('Running on train={0}, val={1}, test={2} samples for run {3}').
-                  format(trainX.shape[0], valX.shape[0], testX.shape[0], r))
+                  format(trainX.shape[0]*2/3, trainX.shape[0]/3, testX.shape[0], r))
     
             # test different parameters 
             for p in range(numparams):
@@ -120,9 +117,6 @@ def classify():
                     # run K-fold algorithm
                     for counter_k in range(K):
                         k_trainX, k_trainY, k_valX, k_valY = get_k_fold_data(counter_k, K, trainX, trainY)
-                        #print(k_trainX[0],k_trainY[0])
-                        #print(k_trainX[10],k_trainY[10])
-                        #print(k_trainX[20],k_trainY[20])
                         # Reset learner for new parameters
                         learner.reset(params)
                         print ('Running learner = ' + learnername + ' on parameters ' + str(learner.getparams()))
@@ -132,11 +126,14 @@ def classify():
                         accuracy[learnername][p, r, counter_k] = learner.get_accuracy()
                         # get weights
                         weights_k.append(learner.get_weights())
-
+                        # test
+                        learner.test(testX, testY)
+                    
+                    # testing code
                     best_accuracy_over_K = np.argmax(accuracy[learnername][p, r])
-                    best_weights_over_K = weights_k[best_accuracy_over_K]
-                    weights.append((best_weights_over_K, accuracy[learnername][p, r, best_accuracy_over_K]))
-                    best_accuracy.append(best_accuracy_over_K)
+                    #best_weights_over_K = weights_k[best_accuracy_over_K]
+                    #weights.append((best_weights_over_K, accuracy[learnername][p, r, best_accuracy_over_K]))
+                    #best_accuracy.append(best_accuracy_over_K)
                     print("best_accuracy_over_K: ", best_accuracy_over_K)
                     
                     # Test model
@@ -146,29 +143,31 @@ def classify():
                     # accuracy[learnername][p,r] = acc
 
     # Save best weights & accuracy
-    pickle.dump(weights, open("weights.pkl", "wb"))
-    pickle.dump(accuracy, open("accuracy.pkl","wb"))
+    if False:
+        pickle.dump(weights, open("weights.pkl", "wb"))
+        pickle.dump(accuracy, open("accuracy.pkl","wb"))
 
     # plot
     if plot == True:
         print("PLOT CNN Result!")
         #num_epochs = 300
-        accuracy = pickle. load(  open("accurack.pkl", "rb")) 
-        epi = np.arange(0, K, 1)
-        for p in range (numparams):
-            temp_acc = np.zeros(K)
-            for r in range (numruns):
-                print("accuracy :", accuracy['CNN'][p,r])
-                temp_acc += accuracy['CNN'][p,r]
-            plt.plot(epi, temp_acc, label = 'validation accuracy p='+str(p))
+        accuracy = accuracy['Neuron Network'][0,0,0,:plot_len]
+        epi = np.arange(0, plot_len, 1)
+        plt.plot(epi, accuracy, label = 'CNN')
+        # for p in range (numparams):
+        #     temp_acc = np.zeros(K)
+        #     for r in range (numruns):
+        #         print("accuracy :", accuracy['CNN'][p,r])
+        #         temp_acc += accuracy['CNN'][p,r]
+        #     plt.plot(epi, temp_acc, label = 'validation accuracy p='+str(p))
                 
         #epi = np.arange(0, num_epochs, 1)
         #plt.plot(epi,accuracy_val, label='validation accuracy')
         #plt.plot(epi,accuracy_test, label='test accuracy')
         #plt.plot(epi,accuracy_train, label='train accuracy')
-        plt.xlabel('K')
-        plt.ylabel('Accuracy %') 
-        plt.legend()    
+        plt.xlabel('Epochs')
+        plt.ylabel('Sigmoid Cross Entropy Loss') 
+        plt.legend()   
 
 
 def main():
