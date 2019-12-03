@@ -4,12 +4,13 @@ import re, os, json, nltk
 import numpy as np
 
 wnl = nltk.WordNetLemmatizer()
-unwanted = re.compile('[^a-z0-9-_().!?\']')
+unwanted = re.compile('[^a-z0-9_!?\']')
 #symbols = re.compile('[-()_.!?<>|+]')
 symbols = re.compile('[^a-z0-9]')
 
 # splits each file into 100-words segments
 def segFile(fid, fnumber, info, outp, words, c, styleChanged):
+    partitions = []
     if (styleChanged):
         positions = info["positions"]
         # partition the file based on style of change, each partition is written by one author
@@ -39,8 +40,9 @@ def segFile(fid, fnumber, info, outp, words, c, styleChanged):
                 segment += (' ' + symbols.sub('', words[k]))
             lastSentence = k
         except IndexError:
+            segment = ''
             for k in range(1, 101):
-                segment += words[len(words) - k]
+                segment += (' ' + symbols.sub('', words[len(words) - k]))
             done = True
 
         textoutname = outp + 'problem_' + str(fnumber) + '_' + str(fid) + '.txt'
@@ -81,6 +83,9 @@ def splitFile():
                 truthfile.append(path + f)
             else:
                 textfile.append(path + f)
+
+        textfile.sort()
+        truthfile.sort()
         
         fid = 0
         fnumber = 1
@@ -103,21 +108,20 @@ def splitFile():
             truthf.close()
 
             words = c.split()
-            # TODO: remove plurals using WordNet
+
             for w in range(len(words)):
-                #print (words[w])
                 token = wnl.lemmatize(words[w])
-                words[w] = token.encode('utf-8')
+                words[w] = symbols.sub('', token)
 
-            allWords.extend(words)
-
+            allWords.append(words)
+            
             # only split the files, and create label with 0
             if (not info["changes"]):
                 fid = segFile(fid, fnumber, info, outp, words, c, 0)
             # need to split the file as well as creating new labels for them
             else:
                 fid = segFile(fid, fnumber, info, outp, words, c, 1)
-
+            
             fnumber += 1
 
     return allWords
@@ -125,16 +129,9 @@ def splitFile():
 def genModel():
     d = []
 
-    with open('dictionary.txt') as f:
-        line = f.readline().strip().lower()
-        while line != '':
-            d.append(line)
-            line = f.readline().strip().lower()
+    wordList = splitFile()
 
-    words = splitFile()
-    d.extend(words)
-    wordList = list(set(d))
-    model = Word2Vec([wordList], min_count = 1, workers = 4)
+    model = Word2Vec(wordList, min_count = 1, workers = 4)
     model.save("word2vec.model")
 
     model = Word2Vec.load("word2vec.model")
@@ -143,6 +140,7 @@ def genModel():
 
 # each X[i] is a 100 * 100 matrix representing one file
 def getSample(option):
+    global wnl
     '''
     option: one of the values in ['train', 'test', 'validate']
 
@@ -176,6 +174,7 @@ def getSample(option):
         words = textf.readline().strip().split()
         label = float(truthf.readline().strip())
         for j, word in enumerate(words):
+            word = wnl.lemmatize(word)
             try:
                 X[i][j] = model.wv[word]
             except:
