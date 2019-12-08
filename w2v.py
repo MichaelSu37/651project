@@ -1,6 +1,6 @@
 from gensim.models import Word2Vec
 from gensim.test.utils import common_texts, get_tmpfile
-import re, os, json, nltk
+import re, os, json, nltk, pickle
 import numpy as np
 
 wnl = nltk.WordNetLemmatizer()
@@ -164,6 +164,8 @@ def getSample(option):
     
     truthfile.sort()
     textfile.sort()
+    print(truthfile)
+    exit()
 
     y = np.zeros(len(textfile))
     X = np.zeros((len(textfile), 100, 100))
@@ -184,8 +186,83 @@ def getSample(option):
     return X, y
 
 
+def getIndex():
+    path = 'test/'
+    fList = sorted(os.listdir(path))
+    truthfile = []
+    textfile = []
+    for f in fList:
+        if (f.endswith(".truth")):
+            pass
+        else:
+            textfile.append(f)
+  
+    rindex = []
+    ylabel = []         
+    index = 0
+    curfile = 1000
+    truthfile = ['1000']
+    temp = []
+    for f in textfile:
+        id1 = f.find('_')
+        id2 = f.rfind('_')
+        # extract problem number
+        newfile = int(f[id1+1: id2])
+        
+        # segment belongs to the same problem
+        if curfile == newfile:
+            temp.append(index)
+        # start of a new problem
+        else:
+            truthfile.append(str(newfile))
+            rindex.append(temp)
+            temp = [index]
+            curfile = newfile
+            
+        index += 1
+        
+    path = 'testing/'
+    for f in truthfile:
+        fname = path + 'problem-' + f + '.truth'
+        truthf = open(fname, 'r')
+        info = json.load(truthf)
+        truthf.close()
+        
+        if (info['changes']):
+            ylabel.append(1)
+        else:
+            ylabel.append(0)
+            
+    ylabel = np.array(ylabel)
+    with open('index.pkl', 'wb') as f:
+        pickle.dump(rindex, f)
+    with open('ylabel.pkl', 'wb') as f:
+        pickle.dump(ylabel, f)
+        
+    #print (rindex, ylabel)
+    #print (textfile, truthfile)
+    return rindex, np.array(ylabel)
+    
+    
+       
+
 if __name__ == '__main__':
-    genModel()
-    options = ['train', 'test', 'validate']
-    getSample(options[0])
+    #genModel()
+    #options = ['train', 'test', 'validate']
+    #getSample('test')
+    getIndex()
+
+    '''
+    trainX, trainY = getSample('train')
+    with  open('train.pkl', 'wb') as f:
+        pickle.dump((trainX, trainY), f)
+
+    testX, testY = getSample('test')
+    with  open('test.pkl', 'wb') as f:
+        pickle.dump((testX, testY), f)
+
+    valX, valY = getSample('validate')
+    with  open('val.pkl', 'wb') as f:
+        pickle.dump((valX, valY), f)
+    '''
 
