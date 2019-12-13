@@ -164,25 +164,44 @@ def getSample(option):
     
     truthfile.sort()
     textfile.sort()
-    print(truthfile)
-    exit()
+    
+    negatives = 0
+    positives = 0
+    
 
-    y = np.zeros(len(textfile))
-    X = np.zeros((len(textfile), 100, 100))
+    Xneg = np.zeros((20022, 100, 100))
+    Xpos = np.zeros((4115, 100, 100))
 
+    y = np.zeros(24690)
+    X = np.zeros((24690, 100, 100))
+
+    pos = 0
     for i in range(len(textfile)):
         textf = open(textfile[i], 'r')
         truthf = open(truthfile[i], 'r')
         words = textf.readline().strip().split()
         label = float(truthf.readline().strip())
-        for j, word in enumerate(words):
-            word = wnl.lemmatize(word)
-            try:
-                X[i][j] = model.wv[word]
-            except:
-                pass
-        y[i] = label
+        if (label == 0 and negatives >= 12344): continue
+        
+        if (label == 1):
+            times = 3
+            positives += 3
+        else:
+            times = 1
+            negatives += 1
+            
+        for k in range(times):
+            for j, word in enumerate(words):
+                word = wnl.lemmatize(word)
+                try:
+                    X[pos][j] = model.wv[word]
+                except:
+                    pass
+            pos += 1
+                    
+            y[pos] = label
 
+    print (positives, negatives, positives + negatives)
     return X, y
 
 
@@ -232,10 +251,27 @@ def getIndex():
             ylabel.append(1)
         else:
             ylabel.append(0)
+    
+    testingset = open('test.pkl', 'rb')
+    X, y = pickle.load(testingset)
+    testingset.close()
+    
+    newX = []
+    for i, problem in enumerate(rindex):
+        temp = []
+        for j, ind in enumerate(problem):
+            #print (ind, len(X))
+            temp.append(X[ind])
             
+        temp = np.array(temp)
+        newX.append(temp)
+
+    
+    with open('reformed.pkl', 'wb') as f:
+        pickle.dump(newX, f)
+    
+    
     ylabel = np.array(ylabel)
-    with open('index.pkl', 'wb') as f:
-        pickle.dump(rindex, f)
     with open('ylabel.pkl', 'wb') as f:
         pickle.dump(ylabel, f)
         
@@ -249,14 +285,18 @@ def getIndex():
 if __name__ == '__main__':
     #genModel()
     #options = ['train', 'test', 'validate']
-    #getSample('test')
-    getIndex()
+    #getSample('train')
+    #getIndex()
 
+    #f = open('train_balanced.pkl', 'rb')
+    #X, y = pickle.load(f)
+
+    X, y = getSample('train')
+    with  open('train_balanced.pkl', 'wb') as f:
+        pickle.dump((X, y), f)
+    print (len(y), len(y) - list(y).count(1))
+        
     '''
-    trainX, trainY = getSample('train')
-    with  open('train.pkl', 'wb') as f:
-        pickle.dump((trainX, trainY), f)
-
     testX, testY = getSample('test')
     with  open('test.pkl', 'wb') as f:
         pickle.dump((testX, testY), f)
