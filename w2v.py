@@ -64,6 +64,7 @@ def splitFile():
     global wnl
 
     paths = ['testing/', 'training/', 'validation/']
+    paths = ['training']
     outpath = ['test/', 'train/', 'validate/']
 
     for path in outpath:
@@ -290,7 +291,7 @@ if __name__ == '__main__':
 
     #f = open('train_balanced.pkl', 'rb')
     #X, y = pickle.load(f)
-
+    splitFile()
     X, y = getSample('train')
     with  open('train_balanced.pkl', 'wb') as f:
         pickle.dump((X, y), f)
