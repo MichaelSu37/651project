@@ -64,7 +64,7 @@ def splitFile():
     global wnl
 
     paths = ['testing/', 'training/', 'validation/']
-    paths = ['training']
+    paths = ['training/']
     outpath = ['test/', 'train/', 'validate/']
 
     for path in outpath:
