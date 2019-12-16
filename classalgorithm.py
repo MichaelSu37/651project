@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-
+import OneCycleLR from OneCycle
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -73,6 +73,56 @@ class CNN(nn.Module):
         x = torch.sigmoid(self.fc4(x))
 
         return x
+        
+class Deep_CNN(nn.Module):
+    """
+    Input shape batches x channels x height x width (i.e. n x 1 x 100 x 100)
+    Output shape is n x 1
+    """
+    def __init__(self):
+        super(CNN, self).__init__()
+
+        self.pool = nn.MaxPool2d(2,2)
+        self.conv1 = nn.Conv2d(1, 3, 3, padding=1, stride=1)
+        self.conv2 = nn.Conv2d(1+3, 3, 3, padding=1, stride=1)
+        self.conv3 = nn.Conv2d(1+3+3, 3, 3, padding=1, stride=1)
+
+        self.conv4 = nn.Conv2d(3, 5, 5, padding=2, stride=1)
+        self.conv5 = nn.Conv2d(3+5, 5, 5, padding=2, stride=1)
+        self.conv6 = nn.Conv2d(3+5+5, 5, 5, padding=2, stride=1)
+
+        self.conv7 = nn.Conv2d(5, 7, 5, padding=2, stride=1)
+        self.conv8 = nn.Conv2d(5+7, 7, 5, padding=2, stride=1)
+        self.conv9 = nn.Conv2d(5+7+7, 7, 5, padding=2, stride=1)
+
+        self.fc1 = nn.Linear(7*25*25, 2048)
+        self.fc2 = nn.Linear(2048, 512)
+        self.fc3 = nn.Linear(512, 128)
+        self.fc4 = nn.Linear(128,32)
+        self.fc5 = nn.Linear(32,1)
+
+    def forward(self, x):
+        activation = F.relu
+        x1 = activation(self.conv1(x))   # 3 x 100 x 100
+        x2 = activation(self.conv2(torch.cat((x,x1), dim=1)))
+        x3 = activation(self.conv3(torch.cat((x,x1,x2), dim=1)))
+        x = self.pool(x3)
+        x4 = activation(self.conv4(x)) # 5 x 50 x 50
+        x5 = activation(self.conv5(torch.cat((x,x4), dim=1)))
+        x6 = activation(self.conv6(torch.cat((x,x4,x5), dim=1)))
+        x = self.pool(x6)
+        x7 = activation(self.conv7(x)) # 7 x 25 x 25
+        x8 = activation(self.conv8(torch.cat((x,x7), dim=1)))
+        x9 = activation(self.conv9(torch.cat((x,x7,x8), dim=1)))
+
+        x = x9.view(-1, 7*25*25)   
+        x = activation(self.fc1(x))
+        x = activation(self.fc2(x))
+        x = activation(self.fc3(x))
+        x = activation(self.fc4(x))
+        x = self.fc5(x)
+
+        return x
 
 class CNN_Class(Classifier):
     """
@@ -88,6 +138,8 @@ class CNN_Class(Classifier):
         self.net = CNN().to(device)
         self.criterion = nn.BCELoss()
         self.optimizer = optim.SGD(self.net.parameters(), lr=self.params["stepsize"], momentum=0.8)
+        self.num_steps = 800
+        self.schedualer = OneCycleLR(self.optimizer, num_steps=self.num_steps, lr_range=(0.000000001, 0.1))
         self.loss = []
 
     def createDataset(self, X,Y):
