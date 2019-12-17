@@ -5,9 +5,11 @@ import math
 import pickle, os
 
 import numpy as np
-import classalgorithm as algs
+#import utilities as utils
+#import dataloader as dtl
+# import classalgorithm as algs
 import matplotlib.pyplot as plt
-from w2v import getSample
+# from w2v import getSample
 
 
 def get_k_fold_data(k, K, trainX, trainY):
@@ -35,7 +37,8 @@ def get_k_fold_data(k, K, trainX, trainY):
 def classify():
     # init variables
     run = True
-    plot = False
+    test = True
+    plot = True
     plot_len = 0
     numruns = 1
     k_fold = True
@@ -44,31 +47,35 @@ def classify():
 
     classalgs = {
         #'Logistic Regression': algs.LogitReg(),
-        'CNN': algs.CNN_Class(),
+        'CNN': CNN_Class(),
     }
     numalgs = len(classalgs)
 
     parameters = (
         #{'regularizer': 'None', 'stepsize':0.1, 'num_steps':300, 'batch_size':20},
-        {'regularizer': 'None', 'stepsize':0.001, 'epochs':200, 'bSize':20, 'hidden': 200},
+        {'regularizer': 'None', 'stepsize':0.01, 'epochs':20, 'bSize':20, 'hidden': 200},
     )
     numparams = len(parameters)
 
     accuracy = {}
     for learnername in classalgs:
-        accuracy[learnername] = np.zeros((numparams, numruns, K))
+       accuracy[learnername] = np.zeros((numparams, numruns, K, 100000))
 
     # load dataset & shuffle 
-    trainDatafile = '/content/drive/My Drive/651Project/dataAfterSplit/train.pkl'
+    # trainX, testX = pickle. load(open(dataset_file, "rb"))
+
+    # process data
+    trainDatafile = '/content/drive/My Drive/651Project/dataAfterSplit/train_balanced.pkl'
     testDatafile = '/content/drive/My Drive/651Project/dataAfterSplit/test.pkl'
     valDatafile = '/content/drive/My Drive/651Project/dataAfterSplit/val.pkl'
+
     if (os.path.exists(trainDatafile) and os.path.exists(testDatafile) and os.path.exists(valDatafile)):
         with open(trainDatafile, 'rb') as f:
             trainX, trainY = pickle.load(f)
         with open(testDatafile, 'rb') as f:
             testX, testY = pickle.load(f)
         with open(valDatafile, 'rb') as f:
-            valX, valY = pickle.load(f)    
+            valX, valY = pickle.load(f)
     elif (os.path.exists('train.pkl') and os.path.exists('test.pkl') and os.path.exists('val.pkl')):
         with open('train.pkl', 'rb') as f:
             trainX, trainY = pickle.load(f)
@@ -90,20 +97,19 @@ def classify():
         with  open('val.pkl', 'wb') as f:
             pickle.dump((valX, valY), f)
     
-
-    np.random.seed(1)
-    np.random.shuffle(trainX)
-    np.random.seed(1)
-    np.random.shuffle(trainY)
+    # randomize training data
+    # np.random.seed(1)
+    # np.random.shuffle(trainX)
+    # np.random.seed(1)
+    # np.random.shuffle(trainY)
 
     weights = []
-    best_accuracy = []
     
     # Run learning algorithm
     if run:
         for r in range(numruns):
             print(('Running on train={0}, val={1}, test={2} samples for run {3}').
-                  format(trainX.shape[0]*2/3, trainX.shape[0]/3, testX.shape[0], r))
+                  format(trainX.shape[0], valX.shape[0], testX.shape[0], r))
     
             # test different parameters 
             for p in range(numparams):
@@ -123,37 +129,64 @@ def classify():
                         # Train model
                         learner.learn(k_trainX, k_trainY, k_valX, k_valY)
                         # get error
-                        accuracy[learnername][p, r, counter_k] = learner.get_accuracy()
+                        temp_acc = learner.get_accuracy()
+                        plot_len = len(temp_acc)
+                        accuracy[learnername][p, r, counter_k, :plot_len] = np.add(accuracy[learnername][p, r, counter_k, :plot_len],temp_acc)
                         # get weights
                         weights_k.append(learner.get_weights())
-                        # test
-                        learner.test(testX, testY)
-                    
-                    # testing code
+                        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                        # learner.test(testX, testY)
+                        break
+
                     best_accuracy_over_K = np.argmax(accuracy[learnername][p, r])
-                    #best_weights_over_K = weights_k[best_accuracy_over_K]
-                    #weights.append((best_weights_over_K, accuracy[learnername][p, r, best_accuracy_over_K]))
-                    #best_accuracy.append(best_accuracy_over_K)
+                    # best_weights_over_K = weights_k[best_accuracy_over_K]
+                    # weights.append((best_weights_over_K, accuracy[learnername][p, r, best_accuracy_over_K]))
                     print("best_accuracy_over_K: ", best_accuracy_over_K)
                     
                     # Test model
+                    
                     # predictions = learner.predict(testX)
                     # acc = utils.getaccuracy(testY, predictions)
                     # print ('accuracy for ' + learnername + ': ' + str(acc))
                     # accuracy[learnername][p,r] = acc
+    # Save best weights
+    # pickle.dump(weights, open("weights.pkl", "wb"))
 
-    # Save best weights & accuracy
-    if False:
-        pickle.dump(weights, open("weights.pkl", "wb"))
-        pickle.dump(accuracy, open("accuracy.pkl","wb"))
+    # test accuracy for files
+    if test:
+        testXfile = '/content/drive/My Drive/651Project/dataAfterSplit/reformed.pkl'
+        testYfile = '/content/drive/My Drive/651Project/dataAfterSplit/ylabel.pkl'
+        with open(testXfile, 'rb') as f:
+            testX = pickle.load(f)
+        with open(testYfile, 'rb') as f:
+            testY = pickle.load(f)
+        predict_file = np.zeros(len(testX))
+        print("--------------test on",len(testX),"data-----------------")
+
+        for i in range(len(testX)):
+            result = learner.predict(testX[i])
+            result = torch.sum(result)
+            print(result)
+            # the file has multiple writer
+            if result > 0:
+                predict_file[i] = 1
+        wrong = 0
+        for i in range(len(testX)):
+            wrong += abs(testY[i]-predict_file[i])
+            print(testY[i],predict_file[i])
+            acc = 1 - wrong / len(testX)
+        print(acc)
+
 
     # plot
     if plot == True:
         print("PLOT CNN Result!")
         #num_epochs = 300
-        accuracy = accuracy['Neuron Network'][0,0,0,:plot_len]
-        epi = np.arange(0, plot_len, 1)
-        plt.plot(epi, accuracy, label = 'CNN')
+        for learnername, learner in classalgs.items():
+            accuracy_plot = accuracy[learnername][0,0,0,:plot_len]
+            epi = np.arange(0, plot_len, 1)
+            plt.plot(epi, accuracy_plot, label = 'CNN')
+        
         # for p in range (numparams):
         #     temp_acc = np.zeros(K)
         #     for r in range (numruns):
@@ -167,7 +200,7 @@ def classify():
         #plt.plot(epi,accuracy_train, label='train accuracy')
         plt.xlabel('Epochs')
         plt.ylabel('Sigmoid Cross Entropy Loss') 
-        plt.legend()   
+        plt.legend()    
 
 
 def main():
